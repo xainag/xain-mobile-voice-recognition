@@ -7,8 +7,9 @@ import 'dart:io';
 
 /// TensorFlowLite C library.
 DynamicLibrary tflitelib = () {
+  // Loads TFLite binary to be able to call every method
+  // exposed by it on mobile platforms.
   return Platform.isAndroid
       ? DynamicLibrary.open("libtensorflowlite_jni.so")
-      // TODO: check how to load it on iOS
       : DynamicLibrary.process();
 }();
