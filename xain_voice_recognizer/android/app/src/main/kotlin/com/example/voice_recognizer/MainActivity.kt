@@ -1,4 +1,4 @@
-package com.example.voice_prediction_poc
+package com.example.voice_recognizer
 
 import androidx.annotation.NonNull;
 import io.flutter.embedding.android.FlutterActivity
