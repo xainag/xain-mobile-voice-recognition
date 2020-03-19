@@ -6,11 +6,14 @@ import 'package:fft/fft.dart';
 
 /// Returns signal data as a list from a recording at [filepath].
 Future<List<num>> getSignalFromFile(String filepath) async {
+  // Number reserved for the metadata coming from the audio files.
   final waveMetadataOffset = 44;
   final sampleRate = 16000;
   final file = File(filepath).readAsBytesSync();
   final soundBuffer = file.buffer.asInt16List(waveMetadataOffset);
 
+  // Padding to ensure exactly one second of sound for all
+  // audio files.
   return List<num>(sampleRate)
       .asMap()
       .map(
@@ -24,11 +27,14 @@ Future<List<num>> getSignalFromFile(String filepath) async {
 }
 
 /// Converting the [signal] to a tensor representation.
-/// 
+///
 /// Takes the audio input signal and transfers it to a
 /// 2D representation by applying a sliding Hann window
 /// and calculating the Fourier transform.
 List<double> signalToSpectrogram(List<num> signal) {
+  // Specifies the half of a window length, as the first
+  // half of the data in each FFT is duplicated from the last
+  // half of the previous FFT window.
   final overlap = 64;
   final winSize = overlap * 2;
   final freqLen = winSize ~/ 2 + 1;
@@ -37,18 +43,21 @@ List<double> signalToSpectrogram(List<num> signal) {
   final window = Window(WindowType.HANN);
   List<double> results = [];
 
+  // Applies a sliding Hann window and calculates the
+  // Fourier transform for a number of frequencies in the
+  // spectrum of 0 to 16000 Hz.
   for (int i = 1; i < loops; i++) {
-    var start = i * overlap - overlap;
-    var end = start + winSize;
-    var chunk = signal.sublist(start, end);
-    var fft = FFT().Transform(window.apply(chunk)).sublist(0, freqLen).map((e) {
-      var val = math.log(e.modulus + epsilon);
+    int start = i * overlap - overlap;
+    int end = start + winSize;
+    List<num> chunk = signal.sublist(start, end);
+    List<double> fft =
+        FFT().Transform(window.apply(chunk)).sublist(0, freqLen).map((e) {
+      double val = math.log(e.modulus + epsilon);
       return double.parse("$val");
     }).toList();
 
     results.addAll(fft);
   }
-
   return results;
 }
 

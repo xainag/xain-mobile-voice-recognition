@@ -67,6 +67,7 @@ class _MyHomePageState extends State<MyHomePage> {
     Future.microtask(() async {
       try {
         await _initializeInterpreter();
+
         /// True if the recorder was initialized successfully.
         bool recorderInitialized = await _initializeRecorder();
 
@@ -114,7 +115,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   /// Returns `true` if the user allowed for recording permissions.
-  /// 
+  ///
   /// The recorder is initialized and the last recording is deleted.
   Future<bool> _initializeRecorder() async {
     // Asks for proper permissions from the user
@@ -148,6 +149,7 @@ class _MyHomePageState extends State<MyHomePage> {
   /// Spins the recorder up and clears the previous predictions.
   Future<void> _startRecording() async {
     await _recorder.start();
+
     /// The current status of the recording.
     Recording recordingState = await _recorder.current();
 
@@ -170,7 +172,7 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   /// Retrieves the confidences of the word classes for the latest recording.
-  /// 
+  ///
   /// Reads the recording signal from the file, converts it to a spectrogram,
   /// tensor data afterwards and gets the confidences for the input.
   Future<void> _performPrediction() async {
@@ -193,6 +195,7 @@ class _MyHomePageState extends State<MyHomePage> {
       List<Tensor> outputTensors = _interpreter.getOutputTensors();
       Float32List outputData = outputTensors[0].data.buffer.asFloat32List();
       List<Prediction> predictions = processPredictions(outputData, classes);
+
       /// The prediction sublist in order to just show the first three top confidences.
       predictions = predictions.sublist(0, 3);
 
@@ -282,8 +285,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    var _canRecord = _appState == AppState.IsReady;
-    var _canPlay = _canRecord && (_recording?.path?.endsWith('.wav') ?? false);
+    bool _canRecord = _appState == AppState.IsReady;
+    bool _canPlay = _canRecord && (_recording?.path?.endsWith('.wav') ?? false);
 
     return Scaffold(
       appBar: AppBar(
@@ -339,8 +342,8 @@ class _MyHomePageState extends State<MyHomePage> {
                           _appState == AppState.IsPlaying) &&
                       _predictions.isNotEmpty
                   ? _predictions.map((prediction) {
-                      var className = prediction.className;
-                      var confidence =
+                      String className = prediction.className;
+                      String confidence =
                           (prediction.confidence * 100).toStringAsFixed(2) +
                               "%";
                       return InfoText("$className = $confidence");
@@ -353,6 +356,8 @@ class _MyHomePageState extends State<MyHomePage> {
               Padding(
                 padding: EdgeInsets.all(12),
                 child: FloatingActionButton(
+                  /// Calls _recordAudio function if the record button
+                  /// is pressed and the app is in ready state.
                   onPressed: _canRecord ? _recordAudio : null,
                   tooltip: 'Record voice',
                   child: Icon(
