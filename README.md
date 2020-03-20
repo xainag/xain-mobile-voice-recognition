@@ -1,9 +1,23 @@
-# XAIN Mobile Voice Recognition
-
-The XAIN Mobile Voice Recognizer is a mobile speech recognition application written in Dart. Depending on the user's recorded voice it predicts which word out of 15 was recorded. Therefore, TFLite methods exposed by the binary are called with the help of the bindings provided by [tflite_native](https://github.com/dart-lang/tflite_native). For further information like how the model was built or why we decided to follow a cross-platform with Flutter, refer to our "How we did it." article.
+<h1 align="center">
+  <br>
+  XAIN Mobile Voice Recognition
+  <br>
+</h1>
 
 <p align="center">
-  <img src="https://github.com/xainag/xain-mobile-voice-recognition/blob/AP-183_create_documentation/demo/xain_voice_demo.gif" width="150" height="300" />
+  <a href="#how-does-it-work">How does the application work</a> •
+  <a href="#getting-started">Getting started</a> •
+  <a href="#starting-application">Starting the application</a> •
+  <a href="#license">License</a>
+</p>
+
+<p align="center">
+The XAIN Mobile Voice Recognizer is a mobile speech recognition application written in Dart. Depending on the user's recorded voice it predicts which word out of 15 was recorded. Therefore, TFLite methods exposed by the binary are called with the help of the bindings provided by <a href="https://github.com/dart-lang/tflite_native">tflite_native</a>.
+For further information like how the model was built or why we decided to follow a cross-platform with Flutter, refer to our "How we did it." article.
+</p>
+
+<p align="center">
+  <img src="https://github.com/xainag/xain-mobile-voice-recognition/blob/AP-183_create_documentation/demo/xain_voice_demo.gif" width="225" height="450" />
 </p>
 
 
