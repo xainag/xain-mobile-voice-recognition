@@ -1,4 +1,7 @@
-"""Fit a speech recognizer model and covert it to TFLite."""
+"""Fit a speech recognizer model and covert it to TFLite.
+
+Based on: https://github.com/tensorflow/examples/tree/master/lite/examples/speech_commands
+"""
 
 import pathlib
 from typing import Dict, List, Tuple
@@ -49,14 +52,14 @@ class SpeechModelTFLiteConverter:
     def __init__(self) -> None:
         data_dir = pathlib.Path(__file__).parent / "data"
         self.train_file_names_path = data_dir / "train_files.csv"
-        self.test_file_names_path = data_dir / "test_files.csv"
+        self.validation_file_names_path = data_dir / "validation_files.csv"
         self.audio_dir = data_dir / "audio"
         self.overlap = self.WINDOWS_SIZE // 2
         self.time_samples = self.SAMPLE_RATE // (self.WINDOWS_SIZE - self.overlap)
         self.tflite_file_path = data_dir / f"speech_model_{self.EPOCHS}_epochs.tflite"
 
     def calculate_log_spectrogram(self, audio: np.ndarray) -> np.ndarray:
-        """Calculates log_spectrogram (frequencies over time plot) of the audio signal.
+        """Calculates log spectrogram with Hahn windows moving in time.
 
         Args:
             audio (np.ndarray): audio signal.
@@ -84,7 +87,7 @@ class SpeechModelTFLiteConverter:
         return log_spectrogram
 
     def pad_audio(self, samples: np.ndarray) -> np.ndarray:
-        """Pads the audio file in case the length is not set to 1 sec.
+        """Pads the audio file in case the length is not equal to 1 sec.
 
         Args:
             samples (np.ndarray): Audio signal.
@@ -138,18 +141,18 @@ class SpeechModelTFLiteConverter:
 
     @staticmethod
     def encode_ys(
-            y_train: List[str], y_test: List[str], all_words: pd.DataFrame
+            y_train: List[str], y_validation: List[str], all_words: pd.DataFrame
     ) -> Tuple[np.ndarray, np.ndarray]:
-        """Encode Ys.
+        """Implement one-hot-encoding for the Ys, for training and validation.
 
         Args:
             y_train (List[str]): List of classes for the training set.
-            y_test (List[str]): List of classes for the test set.
+            y_validation (List[str]): List of classes for the validation set.
             all_words (pd.DataFrame): DataFrame containing all the words.
 
         Returns:
             y_train_transformed (np.ndarray): Array of encoded Ys for the training set.
-            y_test_transformed (np.ndarray): Array of encoded Ys for the test set.
+            y_val_transformed (np.ndarray): Array of encoded Ys for the validation set.
         """
 
         encoder = sklearn.preprocessing.OneHotEncoder(
@@ -158,62 +161,9 @@ class SpeechModelTFLiteConverter:
         encoder.fit(all_words)
 
         y_train_transformed = encoder.transform(pd.DataFrame(y_train))
-        y_test_transformed = encoder.transform(pd.DataFrame(y_test))
+        y_val_transformed = encoder.transform(pd.DataFrame(y_validation))
 
-        return y_train_transformed, y_test_transformed
-
-    @staticmethod
-    def reduce_conv(tensor: Tensor, num_filters: int, k: int) -> Tensor:
-        """ Building block of the neurat network. It includes the Conv1D layer + normalization +
-        relu + max pooling.
-
-        Args:
-            tensor (Tensor): Tensor.
-            num_filters (int): Number of filters in the convolutional layer.
-            k (int): The number of positions by which the filter is moved right at each step.
-
-        Returns:
-            tensor (Tensor): Tensor after the Conv1D layer.
-        """
-        tensor = Conv1D(
-            num_filters,
-            k,
-            padding="valid",
-            use_bias=False,
-            kernel_regularizer=l2(0.00002),
-        )(tensor)
-        tensor = BatchNormalization()(tensor)
-        tensor = Activation(relu)(tensor)
-        tensor = MaxPool1D(pool_size=3, strides=2, padding="valid")(tensor)
-
-        return tensor
-
-    @staticmethod
-    def context_conv(tensor: Tensor, num_filters: int, k: int) -> Tensor:
-        """ Building block of the neurat network. It includes the Conv1D layer + normalization +
-         relu activation function
-
-        Args:
-            tensor (tf.Tensor): Tensor.
-            num_filters: Number of filters in the convolutional layer.
-            k (int): The number of positions by which the filter is moved right at each step.
-
-        Returns:
-            tensor (Tensor): Tensor after the Conv1D layer.
-        """
-
-        tensor = Conv1D(
-            num_filters,
-            k,
-            padding="valid",
-            dilation_rate=1,
-            kernel_regularizer=l2(0.00002),
-            use_bias=False,
-        )(tensor)
-        tensor = BatchNormalization()(tensor)
-        tensor = Activation(relu)(tensor)
-
-        return tensor
+        return y_train_transformed, y_val_transformed
 
     def conv_1d_time_stacked_model(self, input_size: Tuple[int, int]) -> Model:
         """ Creates a 1D model for temporal data.
@@ -225,23 +175,73 @@ class SpeechModelTFLiteConverter:
             model (Model): Compiled Keras model.
         """
 
+        def _context_conv(tensor: Tensor, num_filters: int, k: int) -> Tensor:
+            """ Building block of the neural network. It includes the Conv1D layer + normalization +
+            relu activation function
+
+            Args:
+                tensor (tf.Tensor): Input tensor to be fed into the convolutional layer.
+                num_filters: Number of filters in the convolutional layer.
+                k (int): The number of positions by which the filter is moved right at each step.
+
+            Returns:
+                tensor (Tensor): Tensor after the Conv1D layer.
+            """
+
+            tensor = Conv1D(
+                num_filters,
+                k,
+                padding="valid",
+                dilation_rate=1,
+                kernel_regularizer=l2(0.00002),
+                use_bias=False,
+            )(tensor)
+            tensor = BatchNormalization()(tensor)
+            tensor = Activation(relu)(tensor)
+            return tensor
+
+        def _reduce_conv(tensor: Tensor, num_filters: int, k: int) -> Tensor:
+            """ Building block of the neural network. It includes the Conv1D layer + normalization +
+            relu + max pooling.
+
+            Args:
+                tensor (Tensor): Input tensor coming from the _context_conv block.
+                num_filters (int): Number of filters in the convolutional layer.
+                k (int): The number of positions by which the filter is moved right at each step.
+
+            Returns:
+                tensor (Tensor): Tensor after the Conv1D layer.
+            """
+
+            tensor = Conv1D(
+                num_filters,
+                k,
+                padding="valid",
+                use_bias=False,
+                kernel_regularizer=l2(0.00002),
+            )(tensor)
+            tensor = BatchNormalization()(tensor)
+            tensor = Activation(relu)(tensor)
+            tensor = MaxPool1D(pool_size=3, strides=2, padding="valid")(tensor)
+            return tensor
+
         input_layer = Input(shape=input_size)
         tensor = input_layer
 
-        tensor = self.context_conv(tensor, num_filters=16, k=1)
-        tensor = self.reduce_conv(tensor, num_filters=32, k=3)
-        tensor = self.context_conv(tensor, num_filters=32, k=3)
+        tensor = _context_conv(tensor, num_filters=16, k=1)
+        tensor = _reduce_conv(tensor, num_filters=32, k=3)
+        tensor = _context_conv(tensor, num_filters=32, k=3)
 
-        tensor = self.reduce_conv(tensor, num_filters=64, k=3)
+        tensor = _reduce_conv(tensor, num_filters=64, k=3)
         tensor = Dropout(0.1)(tensor)
-        tensor = self.context_conv(tensor, num_filters=64, k=3)
+        tensor = _context_conv(tensor, num_filters=64, k=3)
 
-        tensor = self.reduce_conv(tensor, num_filters=128, k=3)
+        tensor = _reduce_conv(tensor, num_filters=128, k=3)
         tensor = Dropout(0.1)(tensor)
-        tensor = self.context_conv(tensor, num_filters=128, k=3)
+        tensor = _context_conv(tensor, num_filters=128, k=3)
 
-        tensor = self.reduce_conv(tensor, num_filters=249, k=3)
-        tensor = self.context_conv(tensor, num_filters=249, k=3)
+        tensor = _reduce_conv(tensor, num_filters=249, k=3)
+        tensor = _context_conv(tensor, num_filters=249, k=3)
 
         tensor = Dropout(0.1)(tensor)
         tensor = Conv1D(self.N_WORDS, 9, activation="softmax")(tensor)
@@ -257,24 +257,24 @@ class SpeechModelTFLiteConverter:
         """Prepare data by reading the audio files, processing them and encoding the Y labels.
 
         Returns:
-            data (Dict[str, np.ndarray]): Dictionary of data split between training and test, and
-                between X and y.
+            data (Dict[str, np.ndarray]): Dictionary of data split between training
+                and validation, for X and y.
         """
 
         train_sample_files = pd.read_csv(self.train_file_names_path, index_col=0)
-        test_sample_files = pd.read_csv(self.test_file_names_path, index_col=0)
+        val_sample_files = pd.read_csv(self.validation_file_names_path, index_col=0)
         x_train, y_train, = self.process_vaw_files(train_sample_files)
-        x_test, y_test = self.process_vaw_files(test_sample_files)
+        x_val, y_val = self.process_vaw_files(val_sample_files)
 
         words_1_15 = train_sample_files["class"].unique().tolist()
         all_words = pd.DataFrame(words_1_15)
-        y_train_encoded, y_test_encoded = self.encode_ys(y_train, y_test, all_words)
+        y_train_encoded, y_val_encoded = self.encode_ys(y_train, y_val, all_words)
 
         data = {
             "x_train": x_train,
             "y_train": y_train_encoded,
-            "x_test": x_test,
-            "y_test": y_test_encoded,
+            "x_validation": x_val,
+            "y_validation": y_val_encoded,
         }
         return data
 
@@ -282,7 +282,7 @@ class SpeechModelTFLiteConverter:
         """Initialise the model and fit it with the training data.
 
         Args:
-            data (Dict[str, np.ndarray]): Dictionary containing training and test data,
+            data (Dict[str, np.ndarray]): Dictionary containing training and validation data,
                 for X and y.
 
         Returns:
@@ -298,7 +298,7 @@ class SpeechModelTFLiteConverter:
             batch_size=128,
             epochs=self.EPOCHS,
             verbose=1,
-            validation_data=(data["x_test"], data["y_test"]),
+            validation_data=(data["x_validation"], data["y_validation"]),
             shuffle=True,
         )
 
@@ -311,9 +311,13 @@ class SpeechModelTFLiteConverter:
 
         data = self.prepare_data()
         recognizer = self.fit_model(data)
-
         converter = tf.lite.TFLiteConverter.from_keras_model(recognizer)
+
+        # The optimization refers to reducing the file size, memory usage and latency
+        # of the model, since it runs on mobile. see below for more details:
+        # https://www.tensorflow.org/lite/performance/model_optimization
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
+
         tflite_model = converter.convert()
 
         with open(str(self.tflite_file_path), "wb") as file:
