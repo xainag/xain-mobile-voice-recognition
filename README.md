@@ -5,14 +5,15 @@
 </h1>
 
 <p align="center">
-  <a href="#how-does-it-work">How does the application work</a> •
+  <a href="#how-does-the-application-work">How does the application work</a> •
   <a href="#getting-started">Getting started</a> •
-  <a href="#starting-application">Starting the application</a> •
+  <a href="#starting-the-application">Starting the application</a> •
   <a href="#license">License</a>
 </p>
 
 <p align="center">
-The XAIN Mobile Voice Recognizer is a mobile speech recognition application written in Dart. Depending on the user's recorded voice it predicts which word out of 15 was recorded. Therefore, TFLite methods exposed by the binary are called with the help of the bindings provided by <a href="https://github.com/dart-lang/tflite_native">tflite_native</a>.
+The XAIN Mobile Voice Recognizer is a mobile speech recognition application written in Dart. It uses Flutter as mobile UI toolkit and TFLite as mobile machine learning framework for doing inference. Depending on the user's recorded voice it predicts which word out of 15 was recorded. Therefore, methods exposed by the TFLite binary are called with the help of the bindings provided by <a href="https://github.com/dart-lang/tflite_native">tflite_native</a>. One of the reasons for adding this example is to show other developers how to run inference on mobiles with their own custom model.
+
 For further information like how the model was built or why we decided to follow a cross-platform with Flutter, refer to our "How we did it." article.
 </p>
 
@@ -29,7 +30,7 @@ XAIN's mobile voice recognizer is able to predict simple recorded words dependin
 
 ### Installing Flutter
 
-First you need Flutter installed on your machine since it is used as toolkit for building our mobile application. Therefore, follow [here](https://flutter.dev/docs/get-started/install/macos) to install Flutter and necessary mobile environments. Afterwards you can run this command to check if your environment is properly configured: 
+First you need Flutter installed on your machine since it is used as toolkit for building our mobile application. Therefore, follow [here](https://flutter.dev/docs/get-started/install) to install Flutter and necessary mobile environments. The application is able to run on both mobile operating systems, Android and iOS. After finishing the installation process you can run this command to check if your environment is properly configured: 
 
 ```shell
 flutter doctor
@@ -48,7 +49,7 @@ git clone https://github.com/xainag/xain-mobile-voice-recognition.git
 
 ## Starting the application
 
-In order to start the application you need to first launch an emulator or connect your physical Android device to the machine. Regarding the emulator it can be either Android Emulator or iOS Simulator.
+In order to start the application you need to first connect your physical Android or iOS device to the machine or launch an emulator. The type of virtual device depends on your operating system and can be either Android Emulator, iOS Simulator or both. For further information about setting up virtual devices refer to [Flutter installation](https://flutter.dev/docs/get-started/install) guidelines.
 
 Then you can run the project using the command line:
 
