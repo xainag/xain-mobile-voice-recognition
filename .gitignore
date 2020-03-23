@@ -23,6 +23,7 @@ doc/api/
 # idea, pycache
 .idea/
 __pycache__/
+.mypy_cache/
 
 # audio files
 python_files/data/audio/
