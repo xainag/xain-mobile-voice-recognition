@@ -1,4 +1,4 @@
-"""Fit a speech recognizer model and covert it to TFLite.
+"""Fit a speech recognizer model and convert it to TFLite.
 
 Based on: https://github.com/tensorflow/examples/tree/master/lite/examples/speech_commands
 """
@@ -12,7 +12,6 @@ import scipy.io.wavfile
 import sklearn.preprocessing
 import structlog
 import tensorflow as tf
-from tensorflow import Tensor
 from tensorflow.keras.activations import relu
 from tensorflow.keras.layers import (
     Activation,
@@ -39,8 +38,9 @@ class SpeechModelTFLiteConverter:
     The data can be found at: https://www.kaggle.com/c/tensorflow-speech-recognition-challenge/data
 
     It will preprocess the data so that the audio files are read to a buffer and converted
-    to spectrograms. The spectrograms are then fed to the a speech recognition custom Keras model,
-    the model is trained, and converted to a TFLite file, which is saved locally.
+    to spectrograms. The spectrograms are then fed to a custom speech recognition Keras model,
+    the model is trained, and converted to a TFLite file, which is saved to the assets dir
+    of the mobile app.
     """
 
     SAMPLE_RATE = 16000
@@ -50,22 +50,24 @@ class SpeechModelTFLiteConverter:
     EPOCHS = 30
 
     def __init__(self) -> None:
-        data_dir = pathlib.Path(__file__).parent / "data"
+        cwd = pathlib.Path.cwd()
+        data_dir = cwd / "python_files/data"
         self.train_file_names_path = data_dir / "train_files.csv"
         self.validation_file_names_path = data_dir / "validation_files.csv"
         self.audio_dir = data_dir / "audio"
         self.overlap = self.WINDOWS_SIZE // 2
         self.time_samples = self.SAMPLE_RATE // (self.WINDOWS_SIZE - self.overlap)
-        self.tflite_file_path = data_dir / f"speech_model_{self.EPOCHS}_epochs.tflite"
+        assets_dir = cwd / "xain_voice_recognizer/assets"
+        self.tflite_file_path = assets_dir / f"digitsnet.tflite"
 
     def calculate_log_spectrogram(self, audio: np.ndarray) -> np.ndarray:
-        """Calculates log spectrogram with Hahn windows moving in time.
+        """Calculate log spectrogram with Hahn windows moving in time.
 
         Args:
-            audio (np.ndarray): audio signal.
+            audio (np.ndarray): Audio signal.
 
         Returns:
-            log_spectrogram (np.ndarray): logarithm of the spectrogram.
+            log_spectrogram (np.ndarray): Logarithm of the spectrogram.
         """
 
         number_of_frequencies = int(self.WINDOWS_SIZE / 2) + 1
@@ -87,7 +89,7 @@ class SpeechModelTFLiteConverter:
         return log_spectrogram
 
     def pad_audio(self, samples: np.ndarray) -> np.ndarray:
-        """Pads the audio file in case the length is not equal to 1 sec.
+        """Pad the audio file in case the length is not equal to 1 sec.
 
         Args:
             samples (np.ndarray): Audio signal.
@@ -95,6 +97,7 @@ class SpeechModelTFLiteConverter:
         Returns:
             padded_samples (np.ndarray): Padded signal.
         """
+
         if len(samples) >= self.SAMPLE_RATE:
             padded_samples = samples
         else:
@@ -109,7 +112,7 @@ class SpeechModelTFLiteConverter:
     def process_vaw_files(
             self, files_sample: pd.DataFrame
     ) -> Tuple[np.ndarray, List[str]]:
-        """Reads files from the dataframe, pads them and transforms the log_spectrograms
+        """Read files from the dataframe, pad them and transform the log_spectrograms
         to ndarrays.
 
         Args:
@@ -166,7 +169,7 @@ class SpeechModelTFLiteConverter:
         return y_train_transformed, y_val_transformed
 
     def conv_1d_time_stacked_model(self, input_size: Tuple[int, int]) -> Model:
-        """ Creates a 1D model for temporal data.
+        """Create a 1D model for temporal data.
 
         Args:
             input_size (Tuple[int, int]): Size of the input vector.
@@ -175,17 +178,17 @@ class SpeechModelTFLiteConverter:
             model (Model): Compiled Keras model.
         """
 
-        def _context_conv(tensor: Tensor, num_filters: int, k: int) -> Tensor:
-            """ Building block of the neural network. It includes the Conv1D layer + normalization +
+        def _context_conv(tensor: tf.Tensor, num_filters: int, k: int) -> tf.Tensor:
+            """Building block of the neural network. It includes the Conv1D layer + normalization +
             relu activation function
 
             Args:
                 tensor (tf.Tensor): Input tensor to be fed into the convolutional layer.
-                num_filters: Number of filters in the convolutional layer.
+                num_filters (int): Number of filters in the convolutional layer.
                 k (int): The number of positions by which the filter is moved right at each step.
 
             Returns:
-                tensor (Tensor): Tensor after the Conv1D layer.
+                tensor (tf.Tensor): Tensor after the Conv1D layer.
             """
 
             tensor = Conv1D(
@@ -200,17 +203,17 @@ class SpeechModelTFLiteConverter:
             tensor = Activation(relu)(tensor)
             return tensor
 
-        def _reduce_conv(tensor: Tensor, num_filters: int, k: int) -> Tensor:
-            """ Building block of the neural network. It includes the Conv1D layer + normalization +
+        def _reduce_conv(tensor: tf.Tensor, num_filters: int, k: int) -> tf.Tensor:
+            """Building block of the neural network. It includes the Conv1D layer + normalization +
             relu + max pooling.
 
             Args:
-                tensor (Tensor): Input tensor coming from the _context_conv block.
+                tensor (tf.Tensor): Input tensor coming from the _context_conv block.
                 num_filters (int): Number of filters in the convolutional layer.
                 k (int): The number of positions by which the filter is moved right at each step.
 
             Returns:
-                tensor (Tensor): Tensor after the Conv1D layer.
+                tensor (tf.Tensor): Tensor after the Conv1D layer.
             """
 
             tensor = Conv1D(
@@ -306,7 +309,8 @@ class SpeechModelTFLiteConverter:
 
     def convert(self) -> None:
         """Main function to prepare the data, initialize and fit the model,
-        and convert the Keras model to TFLite, saving the file locally.
+        and convert the Keras model to TFLite, saving the file to the assets dir
+        of the mobile app.
         """
 
         data = self.prepare_data()
@@ -314,7 +318,7 @@ class SpeechModelTFLiteConverter:
         converter = tf.lite.TFLiteConverter.from_keras_model(recognizer)
 
         # The optimization refers to reducing the file size, memory usage and latency
-        # of the model, since it runs on mobile. see below for more details:
+        # of the model, since it runs on mobile. See below for more details:
         # https://www.tensorflow.org/lite/performance/model_optimization
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
 

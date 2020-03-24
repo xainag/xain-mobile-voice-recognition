@@ -14,6 +14,8 @@
 <p align="center">
 The XAIN Mobile Voice Recognizer is a mobile speech recognition application written in Dart. It uses Flutter as mobile UI toolkit and TFLite as mobile machine learning framework for doing inference. Depending on the user's recorded voice it predicts which word out of 15 was recorded. Therefore, methods exposed by the TFLite binary are called with the help of the bindings provided by <a href="https://github.com/dart-lang/tflite_native">tflite_native</a>. One of the reasons for adding this example is to show other developers how to run inference on mobiles with their own custom model.
 
+The model has been trained using <a href="https://github.com/xainag/xain-mobile-voice-recognition/tree/master/python_files/tfl_converter.py">this python file</a>. Feel free to change the model and experiment with it.
+
 For further information like how the model was built or why we decided to follow a cross-platform with Flutter, refer to our "How we did it." article.
 </p>
 
