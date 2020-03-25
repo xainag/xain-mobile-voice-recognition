@@ -59,6 +59,7 @@ class SpeechModelTFLiteConverter:
         self.time_samples = self.SAMPLE_RATE // (self.WINDOWS_SIZE - self.overlap)
         assets_dir = cwd / "xain_voice_recognizer/assets"
         self.tflite_file_path = assets_dir / f"digitsnet.tflite"
+        self.metrics_path = data_dir / "metrics.csv"
 
     def calculate_log_spectrogram(self, audio: np.ndarray) -> np.ndarray:
         """Calculate log spectrogram with Hahn windows moving in time.
@@ -282,7 +283,7 @@ class SpeechModelTFLiteConverter:
         return data
 
     def fit_model(self, data: Dict[str, np.ndarray]) -> Model:
-        """Initialise the model and fit it with the training data.
+        """Initialise the model, fit it with the training data and save the history locally.
 
         Args:
             data (Dict[str, np.ndarray]): Dictionary containing training and validation data,
@@ -295,7 +296,7 @@ class SpeechModelTFLiteConverter:
         spectrogram_shape = data["x_train"].shape[1:]
         recognizer = self.conv_1d_time_stacked_model(spectrogram_shape)
 
-        recognizer.fit(
+        history = recognizer.fit(
             data["x_train"],
             data["y_train"],
             batch_size=128,
@@ -304,6 +305,8 @@ class SpeechModelTFLiteConverter:
             validation_data=(data["x_validation"], data["y_validation"]),
             shuffle=True,
         )
+        history_df = pd.DataFrame(history.history)
+        history_df.to_csv(self.metrics_path, index=False)
 
         return recognizer
 
