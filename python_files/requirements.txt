@@ -1,0 +1,7 @@
+pandas~=0.25.3
+numpy~=1.15
+scipy~=1.4.1
+scikit-learn~=0.22.1
+structlog==20.1.0
+tensorflow~=2.0.1
+tqdm==4.43.0
