@@ -20,10 +20,11 @@ doc/api/
 *.js.deps
 *.js.map
 
-# idea, pycache
+# idea, cache, DS_Store
 .idea/
 __pycache__/
 .mypy_cache/
+.DS_Store
 
 # audio files
 python_files/data/audio/
