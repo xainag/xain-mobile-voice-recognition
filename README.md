@@ -20,7 +20,7 @@ For further information like how the model was built or why we decided to follow
 </p>
 
 <p align="center">
-  <img src="https://github.com/xainag/xain-mobile-voice-recognition/blob/AP-183_create_documentation/demo/xain_voice_demo.gif" width="275" height="550" />
+  <img src="https://github.com/xainag/xain-mobile-voice-recognition/blob/update-gif-app-preview/demo/xain_voice_demo.gif" width="275" height="550" />
 </p>
 
 
