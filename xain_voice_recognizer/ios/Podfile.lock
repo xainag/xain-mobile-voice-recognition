@@ -1,0 +1,52 @@
+PODS:
+  - audioplayers (0.0.1):
+    - Flutter
+  - Flutter (1.0.0)
+  - flutter_audio_recorder (0.5.4):
+    - Flutter
+  - path_provider (0.0.1):
+    - Flutter
+  - path_provider_macos (0.0.1):
+    - Flutter
+  - TensorFlowLiteC (2.1.0)
+  - VendoredTfLite (2.1.0):
+    - TensorFlowLiteC (= 2.1.0)
+
+DEPENDENCIES:
+  - audioplayers (from `.symlinks/plugins/audioplayers/ios`)
+  - Flutter (from `Flutter`)
+  - flutter_audio_recorder (from `.symlinks/plugins/flutter_audio_recorder/ios`)
+  - path_provider (from `.symlinks/plugins/path_provider/ios`)
+  - path_provider_macos (from `.symlinks/plugins/path_provider_macos/ios`)
+  - VendoredTfLite (from `VendoredTfLite/VendoredTfLite.podspec`)
+
+SPEC REPOS:
+  trunk:
+    - TensorFlowLiteC
+
+EXTERNAL SOURCES:
+  audioplayers:
+    :path: ".symlinks/plugins/audioplayers/ios"
+  Flutter:
+    :path: Flutter
+  flutter_audio_recorder:
+    :path: ".symlinks/plugins/flutter_audio_recorder/ios"
+  path_provider:
+    :path: ".symlinks/plugins/path_provider/ios"
+  path_provider_macos:
+    :path: ".symlinks/plugins/path_provider_macos/ios"
+  VendoredTfLite:
+    :podspec: VendoredTfLite/VendoredTfLite.podspec
+
+SPEC CHECKSUMS:
+  audioplayers: 84f968cea3f2deab00ec4f8ff53358b3c0b3992c
+  Flutter: 0e3d915762c693b495b44d77113d4970485de6ec
+  flutter_audio_recorder: eb998d4e75e59b39d9e3ca1818a5e0f3a82f5836
+  path_provider: abfe2b5c733d04e238b0d8691db0cfd63a27a93c
+  path_provider_macos: f760a3c5b04357c380e2fddb6f9db6f3015897e0
+  TensorFlowLiteC: 215603d4426d93810eace5947e317389554a4b66
+  VendoredTfLite: a5bfd44a35157f9939507b32690d23ac91401db2
+
+PODFILE CHECKSUM: 1f374b6871ad0094dc5221f133efaca7cdce071c
+
+COCOAPODS: 1.9.1
