@@ -16,7 +16,7 @@ The XAIN Mobile Voice Recognizer is a mobile speech recognition application writ
 
 The model has been trained using <a href="https://github.com/xainag/xain-mobile-voice-recognition/tree/master/python_files/tfl_converter.py">this python file</a>. Feel free to change the model and experiment with it.
 
-For further information like how the model was built or why we decided to follow a cross-platform with Flutter, refer to our "How we did it." article.
+For further information like how the model was built or why we decided to follow a cross-platform with Flutter, refer to our <a href="https://medium.com/@XAIN/mobile-voice-recognition-with-tflite-how-we-did-it-e5628f65c6c0">How we did it</a> article.
 </p>
 
 <p align="center">
