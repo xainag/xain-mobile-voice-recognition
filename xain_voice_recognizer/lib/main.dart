@@ -55,7 +55,6 @@ class _MyHomePageState extends State<MyHomePage> {
   AppState _appState = AppState.IsInitializing;
   tfl.Interpreter _interpreter;
   List<Prediction> _predictions = [];
-  AudioPlayer _player = AudioPlayer();
   FlutterAudioRecorder _recorder;
   Recording _recording;
   String _feedbackMessage;
@@ -69,9 +68,9 @@ class _MyHomePageState extends State<MyHomePage> {
         await _initializeInterpreter();
 
         /// True if the recorder was initialized successfully.
-        bool recorderInitialized = await _initializeRecorder();
+        var hasPermissions = await _checkPermissionsForRecorder();
 
-        if (recorderInitialized) {
+        if (hasPermissions) {
           setState(() {
             _appState = AppState.IsReady;
           });
@@ -89,12 +88,6 @@ class _MyHomePageState extends State<MyHomePage> {
           _feedbackMessage = e.message;
         });
       }
-    });
-
-    _player.onPlayerCompletion.listen((event) {
-      setState(() {
-        _appState = AppState.IsReady;
-      });
     });
   }
 
@@ -115,39 +108,36 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   /// Returns `true` if the user allowed for recording permissions.
-  ///
-  /// The recorder is initialized and the last recording is deleted.
-  Future<bool> _initializeRecorder() async {
+  Future<bool> _checkPermissionsForRecorder() async {
     // Asks for proper permissions from the user
-    bool hasPermissions = await FlutterAudioRecorder.hasPermissions;
+    return await FlutterAudioRecorder.hasPermissions;
+  }
 
-    // If the user allowed for permissions, get the latest recording.
-    if (hasPermissions) {
-      String dirPath = (await getExternalStorageDirectory()).path;
-      String filename = 'tempFile.wav';
-      String filePath = "$dirPath/$filename";
-      File file = File(filePath);
+  /// Initializes the recorder and deletes the last recording.
+  Future<void> _initializeRecorder() async {
+    String dirPath = (await getApplicationDocumentsDirectory()).path;
+    String filename = 'tempFile.wav';
+    String filePath = "$dirPath/$filename";
+    File file = File(filePath);
 
-      // If the file exists, clean it up first
-      // because the FlutterAudioRecorder will
-      // throw an error if the file exists
-      if (file.existsSync()) {
-        file.deleteSync();
-      }
-
-      _recorder = FlutterAudioRecorder(
-        filePath,
-        audioFormat: AudioFormat.WAV,
-      );
-
-      await _recorder.initialized;
+    /// If the file exists, clean it up first
+    /// because the FlutterAudioRecorder will
+    /// throw an error if the file exists
+    if (file.existsSync()) {
+      file.deleteSync();
     }
 
-    return hasPermissions;
+    _recorder = FlutterAudioRecorder(
+      filePath,
+      audioFormat: AudioFormat.WAV,
+    );
+
+    await _recorder.initialized;
   }
 
   /// Spins the recorder up and clears the previous predictions.
   Future<void> _startRecording() async {
+    await _initializeRecorder();
     await _recorder.start();
 
     /// The current status of the recording.
@@ -227,7 +217,16 @@ class _MyHomePageState extends State<MyHomePage> {
       _appState = AppState.IsPlaying;
     });
 
-    await _player.play(_recording.path, isLocal: true);
+    AudioPlayer currentPlayer = AudioPlayer();
+    await currentPlayer.play(_recording.path, isLocal: true);
+
+    currentPlayer.onPlayerCompletion.listen((event) async {
+      await currentPlayer.dispose();
+
+      setState(() {
+        _appState = AppState.IsReady;
+      });
+    });
   }
 
   List<Widget> _statusText(AppState state) {
@@ -394,7 +393,6 @@ class _MyHomePageState extends State<MyHomePage> {
     // Friendly deletion of interpreter instance
     // and shutting down of audio player.
     _interpreter.delete();
-    _player.dispose();
 
     super.dispose();
   }
